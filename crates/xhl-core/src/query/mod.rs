@@ -129,9 +129,30 @@ impl QueryRegistry {
         Ok(count)
     }
 
+    /// Semua query ID yang diketahui, dengan presedensi yang **sama** seperti
+    /// [`resolve`](Self::resolve): aset bawaan < cache store < hasil discovery
+    /// proses ini.
+    ///
+    /// Sebelumnya fungsi ini hanya membaca state in-process, sehingga proses
+    /// baru (setiap pemanggilan CLI) melaporkan "0 operasi" padahal store
+    /// memuat ratusan hasil discovery — dan `xhl doctor` ikut melaporkan
+    /// operasi inti sebagai "belum ter-resolve".
     pub async fn known(&self) -> Vec<(String, String)> {
-        let r = self.ids.read().await;
-        let mut list: Vec<_> = r.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+        let mut merged: HashMap<String, String> = self.builtin.clone();
+        if let Some(store) = &self.store {
+            if let Ok(pairs) = store.run(|s| s.query_ids()).await {
+                for (k, v) in pairs {
+                    merged.insert(k, v);
+                }
+            }
+        }
+        {
+            let r = self.ids.read().await;
+            for (k, v) in r.iter() {
+                merged.insert(k.clone(), v.clone());
+            }
+        }
+        let mut list: Vec<_> = merged.into_iter().collect();
         list.sort_by(|a, b| a.0.cmp(&b.0));
         list
     }
@@ -156,6 +177,32 @@ mod tests {
     fn offline_registry(store: Option<StoreHandle>) -> QueryRegistry {
         let client = HttpClient::new(&FIREFOX_133).expect("klien http");
         QueryRegistry::new(client, store)
+    }
+
+    #[tokio::test]
+    async fn known_membaca_cache_store_bukan_hanya_state_proses() {
+        // Regresi: proses baru (setiap pemanggilan CLI) harus melihat hasil
+        // discovery sebelumnya. Sebelumnya `known()` hanya membaca state
+        // in-process sehingga melaporkan 0 operasi walau store penuh.
+        let store = StoreHandle::in_memory().expect("store");
+        store
+            .run(|s| s.set_query_id("SearchTimeline", "hash-dari-discovery", "discovery"))
+            .await
+            .expect("simpan query id");
+
+        let reg = offline_registry(Some(store));
+        let list = reg.known().await;
+        let found = list
+            .iter()
+            .find(|(k, _)| k == "SearchTimeline")
+            .map(|(_, v)| v.clone());
+        assert_eq!(
+            found.as_deref(),
+            Some("hash-dari-discovery"),
+            "cache store harus menang atas aset bawaan"
+        );
+        // Aset tetap ikut terbaca, jadi daftarnya lebih dari satu entri.
+        assert!(list.len() > 1, "aset bawaan tetap disertakan");
     }
 
     #[tokio::test]
