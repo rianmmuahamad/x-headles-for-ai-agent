@@ -26,6 +26,7 @@ import {
   type Flags,
 } from "./commands/read.ts";
 import { XhlError, setGlobalArgs } from "./runner.ts";
+import { startTui } from "./tui/app.ts";
 import { style } from "./ui.ts";
 
 const VERSION = "0.1.0";
@@ -34,6 +35,7 @@ const USAGE = `xmot ${VERSION} — CLI untuk X Headless (xhl)
 
 Pemakaian:
   xmot <perintah> [argumen] [--flag nilai]
+  xmot tui                   antarmuka penuh layar (pilih tugas, Enter)
 
 Baca (tidak mengubah apa pun di X):
   trends   [--category trending|news|sport|entertainment] [--limit N]
@@ -138,6 +140,9 @@ async function dispatch(
 ): Promise<number> {
   const rest = positionals.slice(1);
   switch (command) {
+    case "tui":
+      await startTui();
+      return 0;
     case "trends":
       return cmdTrends(flags, json);
     case "search":
