@@ -6,3 +6,6 @@
 *.db-shm
 cookies.txt
 *.cookies.json
+
+# CLI TypeScript (xmot): dependensi tidak di-commit; bun.lock dikomit.
+node_modules/

@@ -101,6 +101,11 @@ enum Command {
         #[arg(long)]
         handle: String,
     },
+    /// Baca isi thread dari sebuah tweet.
+    Thread {
+        /// ID tweet.
+        tweet_id: String,
+    },
     /// Tulis tweet.
     Post {
         /// Isi tweet. Kosongkan bila memakai --file.
@@ -493,6 +498,11 @@ async fn run(cli: Cli) -> Result<u8, XhlError> {
                 .timeline(kind.into(), handle.as_ref(), None, limit)
                 .await?;
             print_tweets(&page.items, json).map(|_| 0)
+        }
+        Command::Thread { tweet_id } => {
+            let svc = ResearchService::new(driver?);
+            let tweets = svc.thread(&TweetId(tweet_id)).await?;
+            print_tweets(&tweets, json).map(|_| 0)
         }
         Command::User { handle } => {
             let svc = ResearchService::new(driver?);

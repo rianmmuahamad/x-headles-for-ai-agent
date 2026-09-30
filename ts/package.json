@@ -1,0 +1,23 @@
+{
+  "name": "xmot",
+  "version": "0.1.0",
+  "description": "CLI modern untuk X Headless (xhl) — kendalikan akun X dari terminal",
+  "type": "module",
+  "bin": {
+    "xmot": "./src/main.ts"
+  },
+  "scripts": {
+    "start": "bun run src/main.ts",
+    "typecheck": "bunx tsc --noEmit",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  },
+  "engines": {
+    "bun": ">=1.1"
+  },
+  "license": "MIT",
+  "private": true
+}
