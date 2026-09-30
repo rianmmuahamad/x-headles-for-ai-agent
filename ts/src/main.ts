@@ -34,8 +34,9 @@ const VERSION = "0.1.0";
 const USAGE = `xmot ${VERSION} — CLI untuk X Headless (xhl)
 
 Pemakaian:
+  xmot                       buka TUI (pilih tugas, Enter) — tanpa argumen
+  xmot tui                   sama, eksplisit
   xmot <perintah> [argumen] [--flag nilai]
-  xmot tui                   antarmuka penuh layar (pilih tugas, Enter)
 
 Baca (tidak mengubah apa pun di X):
   trends   [--category trending|news|sport|entertainment] [--limit N]
@@ -177,13 +178,24 @@ async function dispatch(
 
 async function main(): Promise<number> {
   const argv = process.argv.slice(2);
-  if (argv.includes("--help") || argv.includes("-h") || argv.length === 0) {
+  if (argv.includes("--help") || argv.includes("-h")) {
     process.stdout.write(USAGE);
-    return argv.length === 0 ? 1 : 0;
+    return 0;
   }
   if (argv.includes("--version") || argv.includes("-V")) {
     process.stdout.write(`xmot ${VERSION}\n`);
     return 0;
+  }
+  if (argv.length === 0) {
+    // Tanpa argumen di terminal sungguhan: buka TUI. Itu yang diharapkan dari
+    // aplikasi layar penuh — mencetak bantuan panjang justru terasa seperti
+    // "tidak bisa masuk". Di pipa/CI bantuan tetap yang benar.
+    if (process.stdin.isTTY === true) {
+      await startTui();
+      return 0;
+    }
+    process.stdout.write(USAGE);
+    return 1;
   }
 
   const { positionals, flags } = parseArgs(argv);
