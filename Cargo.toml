@@ -1,0 +1,58 @@
+[workspace]
+resolver = "2"
+members = ["crates/xhl-core", "crates/xhl-cli", "crates/xhl-mcp"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+rust-version = "1.80"
+description = "X Headless — control plane akun X untuk AI agent"
+
+[workspace.dependencies]
+# Runtime & serialisasi
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal", "time", "sync"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Error & observability
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Waktu & ID
+time = { version = "0.3", features = ["macros", "formatting", "parsing", "serde-well-known"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+
+# Transport & penyimpanan
+# `http2` wajib: X menolak klien yang hanya berbicara HTTP/1.1 (koneksi diputus
+# tanpa balasan HTTP). `charset` dibutuhkan untuk membaca body ber-encoding.
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "webpki-roots", "http2", "charset", "json", "gzip", "multipart"] }
+rusqlite = { version = "0.40", features = ["bundled"] }
+async-trait = "0.1"
+scraper = "0.23"
+regex = "1"
+base64 = "0.22"
+sha2 = "0.10"
+rand = "0.9"
+
+# TLS impersonation (opsional; memerlukan cmake+clang+nasm untuk BoringSSL).
+# rquest di-yank sepenuhnya dari crates.io; penerus resminya adalah `wreq`
+# (repo 0x676e67/wreq, TLS via `btls`).
+wreq = { version = "0.16", default-features = false, features = ["json", "gzip", "multipart", "webpki-roots", "tokio-rt"] }
+wreq-util = { version = "0.2", default-features = false, features = ["emulation", "tokio-rt"] }
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# Build inti C++ (crates/xhl-core/native). Hanya memanggil compiler dari PATH;
+# tidak butuh cmake/clang.
+cc = "1"
+
+[profile.release]
+# Binary adalah alat CLI/agent: waktu start dan ukuran lebih penting daripada
+# kecepatan kompilasi.
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true

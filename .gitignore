@@ -1,0 +1,8 @@
+/target
+
+# Data lokal xhl (JANGAN pernah di-commit)
+*.db
+*.db-wal
+*.db-shm
+cookies.txt
+*.cookies.json
